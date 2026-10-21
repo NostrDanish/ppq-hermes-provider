@@ -171,6 +171,34 @@ def test_fetch_models_returns_none_on_error():
     assert result is None
 
 
+@pytest.mark.unit
+def test_fetch_models_sends_default_headers():
+    """fetch_models should include default_headers (User-Agent) in the request."""
+    import urllib.request
+
+    mock_response_data = {"data": [{"id": "gpt-4o", "type": "chat"}]}
+    mock_resp = MagicMock()
+    mock_resp.read.return_value = json.dumps(mock_response_data).encode()
+    mock_resp.__enter__ = lambda s: s
+    mock_resp.__exit__ = MagicMock(return_value=False)
+
+    original_request = urllib.request.Request
+    captured_headers = {}
+
+    def spy_request(url, data=None, headers=None, **kwargs):
+        captured_headers.update(headers or {})
+        return original_request(url, data=data, headers=headers or {}, **kwargs)
+
+    with patch("urllib.request.Request", side_effect=spy_request):
+        with patch("urllib.request.urlopen", return_value=mock_resp):
+            ppq.fetch_models(api_key="test-key")
+
+    assert "User-Agent" in captured_headers, (
+        f"Expected User-Agent in request headers, got: {captured_headers}"
+    )
+    assert "ppq-hermes-plugin" in captured_headers["User-Agent"]
+
+
 # ── 5. Integration tests (require PPQ_API_KEY) ───────────────────────────────
 
 @pytest.mark.integration
