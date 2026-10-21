@@ -9,6 +9,7 @@ import os
 import sys
 import json
 import unittest
+import urllib.request
 from unittest.mock import patch, MagicMock
 from pathlib import Path
 
@@ -141,8 +142,23 @@ def test_reasoning_not_sent_when_unsupported():
 
 # ── 4. fetch_models — unit (mocked HTTP) ────────────────────────────────────
 
+def _mock_response(payload):
+    """Build a MagicMock that behaves as an HTTP response context manager."""
+    resp = MagicMock()
+    resp.read.return_value = json.dumps(payload).encode()
+    resp.__enter__ = lambda s: s
+    resp.__exit__ = MagicMock(return_value=False)
+    return resp
+
+
+@pytest.fixture
+def mock_response():
+    """Reusable mock HTTP response for fetch_models unit tests."""
+    return _mock_response
+
+
 @pytest.mark.unit
-def test_fetch_models_filters_chat_only():
+def test_fetch_models_filters_chat_only(mock_response):
     mock_response_data = {
         "data": [
             {"id": "gpt-4o", "type": "chat"},
@@ -152,10 +168,7 @@ def test_fetch_models_filters_chat_only():
             {"id": "deepseek-r1", "type": "chat"},
         ]
     }
-    mock_resp = MagicMock()
-    mock_resp.read.return_value = json.dumps(mock_response_data).encode()
-    mock_resp.__enter__ = lambda s: s
-    mock_resp.__exit__ = MagicMock(return_value=False)
+    mock_resp = mock_response(mock_response_data)
 
     with patch("urllib.request.urlopen", return_value=mock_resp):
         models = ppq.fetch_models(api_key="test-key")
@@ -172,31 +185,22 @@ def test_fetch_models_returns_none_on_error():
 
 
 @pytest.mark.unit
-def test_fetch_models_sends_default_headers():
+def test_fetch_models_sends_default_headers(mock_response):
     """fetch_models should include default_headers (User-Agent) in the request."""
-    import urllib.request
-
     mock_response_data = {"data": [{"id": "gpt-4o", "type": "chat"}]}
-    mock_resp = MagicMock()
-    mock_resp.read.return_value = json.dumps(mock_response_data).encode()
-    mock_resp.__enter__ = lambda s: s
-    mock_resp.__exit__ = MagicMock(return_value=False)
+    mock_resp = mock_response(mock_response_data)
 
-    original_request = urllib.request.Request
-    captured_headers = {}
+    with patch("urllib.request.Request") as mock_request, patch(
+        "urllib.request.urlopen", return_value=mock_resp
+    ):
+        ppq.fetch_models(api_key="test-key")
 
-    def spy_request(url, data=None, headers=None, **kwargs):
-        captured_headers.update(headers or {})
-        return original_request(url, data=data, headers=headers or {}, **kwargs)
-
-    with patch("urllib.request.Request", side_effect=spy_request):
-        with patch("urllib.request.urlopen", return_value=mock_resp):
-            ppq.fetch_models(api_key="test-key")
-
-    assert "User-Agent" in captured_headers, (
-        f"Expected User-Agent in request headers, got: {captured_headers}"
-    )
-    assert "ppq-hermes-plugin" in captured_headers["User-Agent"]
+    # The Request constructor was called with headers containing User-Agent
+    call_kwargs = mock_request.call_args.kwargs
+    assert "headers" in call_kwargs
+    headers = call_kwargs["headers"]
+    assert "User-Agent" in headers
+    assert "ppq-hermes-plugin" in headers["User-Agent"]
 
 
 # ── 5. Integration tests (require PPQ_API_KEY) ───────────────────────────────
