@@ -32,7 +32,7 @@ class PPQProfile(ProviderProfile):
         import json
 
         url = f"{self.base_url}/models"
-        req = urllib.request.Request(url)
+        req = urllib.request.Request(url, headers=self.default_headers)
         if api_key:
             req.add_header("Authorization", f"Bearer {api_key}")
         try:
