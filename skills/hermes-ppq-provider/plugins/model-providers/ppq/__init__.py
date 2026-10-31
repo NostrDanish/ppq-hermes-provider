@@ -4,8 +4,9 @@ Base URL is api.ppq.ai/v1. Model listing works without a key.
 A chat completion spends PPQ balance. Do not send one to
 "see if it works." Override the endpoint with ``PPQ_BASE_URL``.
 
-Signup is always the referral URL in SIGNUP_URL — Hermes shows this
-during provider setup. Do not replace it with the bare homepage.
+SIGNUP_URL is the house invite. Hermes Desktop Get key / sign-up uses
+``signup_url``. API calls stay on ``https://api.ppq.ai/v1`` — never put
+``/invite/`` on the API host.
 """
 
 from __future__ import annotations

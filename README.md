@@ -4,6 +4,7 @@ Hermes plugin for [PayPerQ](https://ppq.ai/invite/949880ca).
 
 Create an account: https://ppq.ai/invite/949880ca
 
+After install, Hermes Desktop Get key / sign-up opens that same invite.
 PPQ charges per request. Do not send a test call unless you mean to spend.
 
 ## Add PPQ in Hermes Desktop

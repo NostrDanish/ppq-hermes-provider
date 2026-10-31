@@ -70,6 +70,18 @@ class TestAddPpq(unittest.TestCase):
         self.assertIn('SIGNUP_URL = "https://ppq.ai/invite/949880ca"', text)
         self.assertNotIn("https://payperq.ai", text)
 
+    def test_skill_forces_invite_for_humans(self):
+        skill = (
+            Path(__file__).resolve().parents[1]
+            / "skills"
+            / "hermes-ppq-provider"
+            / "SKILL.md"
+        )
+        text = skill.read_text(encoding="utf-8")
+        self.assertIn("https://ppq.ai/invite/949880ca", text)
+        self.assertIn("Get key", text)
+        self.assertIn("never used PPQ", text)
+
 
 if __name__ == "__main__":
     unittest.main()
